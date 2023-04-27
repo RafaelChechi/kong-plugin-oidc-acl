@@ -1,15 +1,24 @@
+local typedefs = require "kong.db.schema.typedefs"
+
 return {
-    no_consumer = true,
+    name = "oidc-acl",
     fields = {
-        whitelist = { type = "array" },
-        blacklist = { type = "array" }
-    },
-    self_check = function(schema, plugin_t, dao, is_update)
-        if next(plugin_t.whitelist or {}) and next(plugin_t.blacklist or {}) then
-            return false, Errors.schema "You cannot set both a whitelist and a blacklist"
-        elseif not (next(plugin_t.whitelist or {}) or next(plugin_t.blacklist or {})) then
-            return false, Errors.schema "You must set at least a whitelist or blacklist"
-        end
-        return true
-    end
+        { consumer = typedefs.no_consumer },
+        { protocols = typedefs.protocols_http },
+        {
+            config = {
+                type = "record",
+                fields = {
+                    { whitelist = { type = "array", required = false, elements: { type: "string"}, defaults: {} } },
+                    { blacklist = { type = "array", required = false, elements: { type: "string"}, defaults: {} } },
+                    { userinfo_header_name = { type = "string", required = false, default = "x-userinfo" } }
+                },
+                entity_checks = {
+                    { only_one_of = { "config.whitelist", "config.blacklist" }, },
+                    { at_least_one_of = { "config.whitelist", "config.blacklist" }, },
+                },
+
+            },
+        },
+    }
 }
